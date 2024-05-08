@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/immanuel-supanova/dev-go/database"
+	"github.com/immanuel-supanova/dev-go/jwtauth"
 	"github.com/immanuel-supanova/dev-go/models"
 )
 
@@ -286,4 +287,115 @@ func ApplicationDelete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Message": "Application Deleted",
 	})
+}
+
+func ApplicationGetToken(c *gin.Context) {
+	var data struct {
+		UUID string
+	}
+
+	if c.Bind(&data) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read data",
+		})
+
+		return
+
+	}
+
+	if data.UUID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "UUID not Provided",
+		})
+		return
+	}
+
+	appuuid, err := uuid.Parse(data.UUID)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Check if App exists
+	var app = models.Application{UUID: appuuid}
+	database.DB.First(&app)
+
+	// Create token
+	access, err := jwtauth.CreateAccessToken(app.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to create token",
+		})
+
+		return
+	}
+
+	refresh, err := jwtauth.CreateRefreshToken(app.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to create token",
+		})
+
+		return
+	}
+
+	// Respond
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  access,
+		"refresh_token": refresh,
+	})
+}
+
+func ApplicationGetAccessToken(c *gin.Context) {
+	tokenString := c.GetHeader("Authorization")
+
+	if tokenString == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Token not Provided",
+		})
+		return
+	}
+
+	// decode token
+	sub, err := jwtauth.DecodeRefreshToken(tokenString)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+
+		return
+	}
+
+	// Check if application exists
+	var app = models.Application{ID: sub}
+	result := database.DB.First(&app)
+
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "App not found",
+		})
+
+		return
+	}
+
+	// Create token
+	access, err := jwtauth.CreateAccessToken(app.ID)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to create token",
+		})
+
+		return
+	}
+
+	// Respond
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": access,
+	})
+
 }
