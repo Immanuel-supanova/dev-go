@@ -11,7 +11,7 @@ import (
 func ConnectToDb() {
 	var err error
 
-	dsn := os.Getenv("DB")
+	dsn := os.Getenv("DEVGODB")
 	database.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
