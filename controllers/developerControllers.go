@@ -266,7 +266,7 @@ func DeveloperCurrent(c *gin.Context) {
 	}
 
 	// Check if User is active
-	if dev.IsActive == true {
+	if dev.IsActive {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid user",
 		})
