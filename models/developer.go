@@ -15,5 +15,5 @@ type Developer struct {
 	IsAdmin      bool
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	Applications []Application
+	Applications []Application `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:DevID"`
 }
