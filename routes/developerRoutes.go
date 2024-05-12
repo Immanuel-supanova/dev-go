@@ -7,15 +7,18 @@ import (
 )
 
 func DeveloperRoutes(r *gin.Engine) {
-	r.POST("/create", controllers.DeveloperCreate)
-	r.POST("/create-admin", controllers.DeveloperCreateAdmin)
-	r.DELETE("/delete", controllers.DeveloperDelete)
-	r.PUT("/reset-password", controllers.DeveloperResetPassword)
-	r.PUT("/email-change", controllers.DeveloperEmailChange)
+	route := r.Group("/dev")
 
-	r.Use(middleware.RequireAdmin)
+	route.POST("/create", controllers.DeveloperCreate)
+	route.POST("/create-admin", controllers.DeveloperCreateAdmin)
 
-	r.GET("/read", controllers.DeveloperRead)
-	r.GET("/list", controllers.DeveloperList)
-	r.PUT("/isactive", controllers.DeveloperIsActiveChange)
+	route.DELETE("/delete", middleware.RequireAuth, controllers.DeveloperDelete)
+	route.PUT("/reset-password", middleware.RequireAuth, controllers.DeveloperResetPassword)
+	route.PUT("/email-change", middleware.RequireAuth, controllers.DeveloperEmailChange)
+
+	route.Use(middleware.RequireAdmin)
+
+	route.GET("/read", controllers.DeveloperRead)
+	route.GET("/list", controllers.DeveloperList)
+	route.PUT("/isactive", controllers.DeveloperIsActiveChange)
 }
