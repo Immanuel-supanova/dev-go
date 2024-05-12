@@ -11,6 +11,7 @@ func DeveloperRoutes(r *gin.Engine) {
 
 	route.POST("/create", controllers.DeveloperCreate)
 	route.POST("/create-admin", controllers.DeveloperCreateAdmin)
+	route.GET("/current", controllers.DeveloperCurrent)
 
 	route.DELETE("/delete", middleware.RequireAuth, controllers.DeveloperDelete)
 	route.PUT("/reset-password", middleware.RequireAuth, controllers.DeveloperResetPassword)

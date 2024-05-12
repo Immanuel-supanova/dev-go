@@ -1,13 +1,16 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/immanuel-supanova/dev-go/database"
+	"github.com/immanuel-supanova/dev-go/jwtauth"
 	"github.com/immanuel-supanova/dev-go/models"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func DeveloperCreate(c *gin.Context) {
@@ -204,6 +207,78 @@ func DeveloperRead(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"dev": dev,
 	})
+}
+
+func DeveloperCurrent(c *gin.Context) {
+	// Get the token from the Authorization header
+	tokenString := c.GetHeader("Authorization")
+	if tokenString == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing token"})
+		return
+	}
+
+	// Decode/validate it
+	appid, err := jwtauth.DecodeAccessToken(tokenString)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token is invalid"})
+		return
+	}
+
+	// check if app exists
+	var app = models.Application{ID: appid}
+	appResult := database.DB.First(&app)
+
+	if appResult.Error != nil {
+		if errors.Is(appResult.Error, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "App has not been found"})
+
+			return
+
+		} else {
+			// Handle other database errors
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred"})
+
+		}
+		return
+	}
+
+	// Check if application is active
+	if !app.IsActive {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Dev has been suspended"})
+		return
+	}
+
+	// Get the developer associated with the app
+	devid := app.DevID
+	var dev = models.Developer{UUID: devid}
+
+	// Check if developer exists
+	database.DB.Omit("Password").Omit("UUID").Omit("IsAdmin").Find(&dev)
+
+	// Check if User exists
+	if dev.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user",
+		})
+
+		return
+	}
+
+	// Check if User is active
+	if dev.IsActive == true {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user",
+		})
+
+		return
+	}
+
+	// Respond
+	c.JSON(http.StatusOK, gin.H{
+		"dev": dev,
+	})
+
 }
 
 func DeveloperDelete(c *gin.Context) {
