@@ -4,7 +4,7 @@
 ```
 // .env
 
-DB="host=host user=user password=pass dbname=dbname port=port sslmode=disable"
+DEVGODB="host=host user=user password=pass dbname=dbname port=port sslmode=disable"
 SECRET=<secret_key> 
 DEBUG=<Either true or false>
 ```
